@@ -1863,3 +1863,16 @@ async function baslat() {
 }
 
 baslat();
+// Mobil Alt Menü Navigasyon Senkronizasyonu
+document.querySelectorAll(".mobile-nav-link").forEach(link => {
+  link.addEventListener("click", function(e) {
+    document.querySelectorAll(".mobile-nav-link").forEach(l => l.classList.remove("active"));
+    this.classList.add("active");
+    const target = this.dataset.target;
+    if (target === "genel") genelBakisiGoster();
+    else if (target === "islemler") islemleriGoster();
+    else if (target === "aylik") aylikOzetiGoster();
+    else if (target === "borclar") borclariGoster();
+    else if (target === "hedefler") hedefleriGoster();
+  });
+});

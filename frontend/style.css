@@ -5928,3 +5928,161 @@ body:not(.auth-locked) #authContainer {
     padding: 24px 18px !important;
   }
 }
+/* =========================================================
+   1. MASAÜSTÜ ÖLÇEKLERİ (%75 ve %67)
+   ========================================================= */
+@media (min-width: 1025px) {
+  /* Genel Bakış, İşlemler, Borç & Alacak, Hedefler -> %75 */
+  #genelBakisSayfasi,
+  #islemlerSayfasi,
+  #borclarSayfasi,
+  #hedeflerSayfasi {
+    transform: scale(0.75);
+    transform-origin: top left;
+    width: 133.33% !important; /* Scale daralmasını tam genişliğe dengeler */
+    margin-bottom: -20%;
+  }
+
+  /* Aylık Özet -> %67 */
+  #aylikOzet {
+    transform: scale(0.67);
+    transform-origin: top left;
+    width: 149.25% !important;
+    margin-bottom: -25%;
+  }
+
+  /* Giriş & Kayıt Ekranı -> %100 Tam Boyut */
+  .auth-container, .auth-card, #authForm {
+    transform: none !important;
+    width: 100% !important;
+  }
+
+  .mobile-bottom-nav {
+    display: none !important;
+  }
+}
+
+/* =========================================================
+   2. TELEFON & MOBİL TAM UYUMLULUK (RESPONSIVE)
+   ========================================================= */
+@media (max-width: 1024px) {
+  /* Tüm ölçekleri ve taşmaları sıfırla */
+  *, *::before, *::after {
+    box-sizing: border-box !important;
+  }
+
+  html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    position: relative;
+  }
+
+  #genelBakisSayfasi,
+  #islemlerSayfasi,
+  #aylikOzet,
+  #borclarSayfasi,
+  #hedeflerSayfasi {
+    transform: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 12px 12px 90px 12px !important; /* Alt menüye boşluk */
+  }
+
+  /* Masaüstü sol menüsünü gizle */
+  .sidebar, aside {
+    display: none !important;
+  }
+
+  /* Ana gövdeyi tek sütun yap */
+  .app-layout, .main-layout, main, .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    display: block !important;
+  }
+
+  /* Üst başlık alanı */
+  .top-bar, .header {
+    padding: 12px 16px !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+  }
+
+  /* Kartlar alt alta sıralansın */
+  .summary-cards,
+  .dashboard-grid,
+  .goals-grid,
+  .debts-summary,
+  .stats-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  /* Bakiye kutusu */
+  .balance-card {
+    width: 100% !important;
+    padding: 20px 16px !important;
+  }
+
+  .balance-card h1 {
+    font-size: 28px !important;
+  }
+
+  /* Tablolar ekrandan taşmasın, kaydırılabilsin */
+  .table-container, .table-wrapper, table {
+    display: block !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* MODAL PENCERELER MOBİL */
+  .modal-content, .auth-card {
+    width: 92% !important;
+    max-width: 92% !important;
+    margin: auto !important;
+    padding: 20px 16px !important;
+  }
+
+  /* MOBİL ALT MENÜ BARI */
+  .mobile-bottom-nav {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 65px !important;
+    background: var(--surface, #1e1e2d) !important;
+    border-top: 1px solid var(--border, rgba(255, 255, 255, 0.1)) !important;
+    display: flex !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    z-index: 99999 !important;
+    padding: 6px 0 !important;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25) !important;
+  }
+
+  .mobile-nav-link {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+    color: var(--text-soft, #94a3b8) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    gap: 3px !important;
+    flex: 1 !important;
+  }
+
+  .mobile-nav-link .nav-icon {
+    font-size: 18px !important;
+  }
+
+  .mobile-nav-link.active {
+    color: var(--primary, #6366f1) !important;
+  }
+}
