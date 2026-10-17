@@ -76,8 +76,8 @@ db.serialize(() => {
   // Eski tablolar varsa ve userId kolonu yoksa otomatik ekleme garantisi
   const tablolar = ["transactions", "debts", "goals"];
   tablolar.forEach((tablo) => {
-    db.run(`ALTER TABLE ${tablo} ADD COLUMN userId INTEGER`, (err) => {
-      // Kolon zaten varsa hata verir, hatayı yok sayıyoruz (normal akış)
+    db.run(`ALTER TABLE ${tablo} ADD COLUMN userId INTEGER`, () => {
+      // Kolon zaten varsa hata verir, yok sayılır
     });
   });
 });
@@ -204,10 +204,10 @@ app.post("/api/transactions", authMiddleware, (req, res) => {
   const query = `INSERT INTO transactions (userId, type, amount, date, category, description) VALUES (?, ?, ?, ?, ?, ?)`;
   db.run(
     query,
-    [req.userId, type, amount, date, category || "Diğer", description || category || "İşlem"],
+    [req.userId, type, Number(amount), date, category || "Diğer", description || category || "İşlem"],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
-      res.status(201).json({ id: this.lastID, userId: req.userId, type, amount, date, category, description });
+      res.status(201).json({ id: this.lastID, userId: req.userId, type, amount: Number(amount), date, category, description });
     }
   );
 });
@@ -218,7 +218,7 @@ app.put("/api/transactions/:id", authMiddleware, (req, res) => {
   const query = `UPDATE transactions SET type = ?, amount = ?, date = ?, category = ?, description = ? WHERE id = ? AND userId = ?`;
   db.run(
     query,
-    [type, amount, date, category || "Diğer", description || category || "İşlem", id, req.userId],
+    [type, Number(amount), date, category || "Diğer", description || category || "İşlem", id, req.userId],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ message: "İşlem güncellendi." });
@@ -228,7 +228,7 @@ app.put("/api/transactions/:id", authMiddleware, (req, res) => {
 
 app.delete("/api/transactions/:id", authMiddleware, (req, res) => {
   const { id } = req.params;
-  db.run("DELETE FROM transactions WHERE id = ?", [id, req.userId], function (err) {
+  db.run("DELETE FROM transactions WHERE id = ? AND userId = ?", [id, req.userId], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ message: "İşlem silindi." });
   });
@@ -254,9 +254,9 @@ app.post("/api/debts", authMiddleware, (req, res) => {
     return res.status(400).json({ error: "Lütfen kişi adı, tür ve miktar girin." });
   }
   const query = `INSERT INTO debts (userId, person, type, amount, dueDate, description, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')`;
-  db.run(query, [req.userId, person, type, amount, dueDate || "", description || ""], function (err) {
+  db.run(query, [req.userId, person, type, Number(amount), dueDate || "", description || ""], function (err) {
     if (err) return res.status(500).json({ error: err.message });
-    res.status(201).json({ id: this.lastID, userId: req.userId, person, type, amount, dueDate, description, status: "pending" });
+    res.status(201).json({ id: this.lastID, userId: req.userId, person, type, amount: Number(amount), dueDate, description, status: "pending" });
   });
 });
 
@@ -296,30 +296,69 @@ app.post("/api/goals", authMiddleware, (req, res) => {
     return res.status(400).json({ error: "Hedef adı ve tutarı zorunludur." });
   }
   const query = `INSERT INTO goals (userId, title, targetAmount, currentAmount, targetDate, icon) VALUES (?, ?, ?, ?, ?, ?)`;
-  db.run(query, [req.userId, title, targetAmount, currentAmount || 0, targetDate || "", icon || "🎯"], function (err) {
+  db.run(query, [req.userId, title, Number(targetAmount), Number(currentAmount) || 0, targetDate || "", icon || "🎯"], function (err) {
     if (err) return res.status(500).json({ error: err.message });
-    res.status(201).json({ id: this.lastID, userId: req.userId, title, targetAmount, currentAmount: currentAmount || 0, targetDate, icon });
+    res.status(201).json({ id: this.lastID, userId: req.userId, title, targetAmount: Number(targetAmount), currentAmount: Number(currentAmount) || 0, targetDate, icon });
   });
 });
 
 app.patch("/api/goals/:id/add-funds", authMiddleware, (req, res) => {
   const { id } = req.params;
   const { amountToAdd } = req.body;
-  if (!amountToAdd || isNaN(amountToAdd)) {
-    return res.status(400).json({ error: "Geçerli bir tutar girin." });
+  const parsedAmount = Number(amountToAdd);
+
+  if (!parsedAmount || isNaN(parsedAmount) || parsedAmount <= 0) {
+    return res.status(400).json({ error: "Geçerli bir pozitif tutar girin." });
   }
-  const query = `UPDATE goals SET currentAmount = currentAmount + ? WHERE id = ? AND userId = ?`;
-  db.run(query, [amountToAdd, id, req.userId], function (err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: "Tutar kumbaraya eklendi." });
+
+  // Önce hedefin adını alıp işlemi kaydet
+  db.get("SELECT title FROM goals WHERE id = ? AND userId = ?", [id, req.userId], (err, goal) => {
+    if (err || !goal) return res.status(404).json({ error: "Hedef bulunamadı." });
+
+    const updateQuery = `UPDATE goals SET currentAmount = currentAmount + ? WHERE id = ? AND userId = ?`;
+    db.run(updateQuery, [parsedAmount, id, req.userId], function (updateErr) {
+      if (updateErr) return res.status(500).json({ error: updateErr.message });
+
+      // Kumbaraya para aktarmayı gider işlemi olarak ana hesaba işle
+      const bugun = new Date().toISOString().split("T")[0];
+      const transQuery = `INSERT INTO transactions (userId, type, amount, date, category, description) VALUES (?, 'gider', ?, ?, 'Birikim', ?)`;
+      db.run(transQuery, [req.userId, parsedAmount, bugun, `${goal.title} - Kumbaraya Aktarım`], () => {
+        res.json({ message: "Tutar kumbaraya eklendi ve bakiyenizden düşüldü." });
+      });
+    });
   });
 });
 
+// HEDEFİ SİL VE BİRİKEN PARAYI BAKİYEYE GERİ YATIR (İADE ET)
 app.delete("/api/goals/:id", authMiddleware, (req, res) => {
   const { id } = req.params;
-  db.run("DELETE FROM goals WHERE id = ? AND userId = ?", [id, req.userId], function (err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: "Hedef silindi." });
+
+  // 1. Hedefin mevcut birikimini ve başlığını öğren
+  db.get("SELECT title, currentAmount FROM goals WHERE id = ? AND userId = ?", [id, req.userId], (err, goal) => {
+    if (err || !goal) {
+      return res.status(404).json({ error: "Silinecek hedef bulunamadı." });
+    }
+
+    const iadeTutari = Number(goal.currentAmount) || 0;
+
+    // 2. Hedefi veritabanından sil
+    db.run("DELETE FROM goals WHERE id = ? AND userId = ?", [id, req.userId], function (delErr) {
+      if (delErr) return res.status(500).json({ error: delErr.message });
+
+      // 3. İçinde para varsa ana bakiyeye "Gelir" (Birikim İadesi) olarak aktar
+      if (iadeTutari > 0) {
+        const bugun = new Date().toISOString().split("T")[0];
+        const refundQuery = `INSERT INTO transactions (userId, type, amount, date, category, description) VALUES (?, 'gelir', ?, ?, 'Birikim', ?)`;
+        db.run(refundQuery, [req.userId, iadeTutari, bugun, `${goal.title} - Hedef İptali (Birikim İadesi)`], (refundErr) => {
+          if (refundErr) {
+            return res.json({ message: "Hedef silindi ancak iade kaydı oluşturulamadı." });
+          }
+          return res.json({ message: `Hedef silindi ve biriken ₺${iadeTutari.toFixed(2)} bakiyenize iade edildi.` });
+        });
+      } else {
+        res.json({ message: "Hedef başarıyla silindi." });
+      }
+    });
   });
 });
 

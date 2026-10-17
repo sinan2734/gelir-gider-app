@@ -29,7 +29,6 @@ async function authFetch(url, options = {}) {
   const response = await fetch(url, { ...options, headers });
 
   if (response.status === 401 || response.status === 403) {
-    // Oturum süresi bittiğinde veya geçersiz olduğunda çıkış yaptır
     oturumKapat();
     throw new Error("Oturum süresi doldu.");
   }
@@ -51,7 +50,7 @@ const logoutBtn = document.getElementById("logoutBtn");
 const userDisplayName = document.getElementById("userDisplayName");
 const userAvatarText = document.getElementById("userAvatarText");
 
-let authMode = "login"; // 'login' veya 'register'
+let authMode = "login";
 
 function authModunuAyarla(mod) {
   authMode = mod;
@@ -312,7 +311,7 @@ let hedefler = [];
 let duzenlenenIslemId = null;
 
 const GIDER_KATEGORILERI = ["Market", "Kira", "Fatura", "Sağlık", "Eğlence", "Eğitim", "Yeme-İçme", "Birikim", "Diğer"];
-const GELIR_KATEGORILERI = ["Maaş", "Yatırım", "Hediye / Ek Gelir", "Diğer"];
+const GELIR_KATEGORILERI = ["Maaş", "Yatırım", "Birikim", "Hediye / Ek Gelir", "Diğer"];
 
 function kategoriSecenekleriniDoldur(tur, seciliKategori = "") {
   if (!kategoriInput) return;
@@ -817,20 +816,8 @@ async function kumbarayaParaEkle(hedef) {
     });
     if (!cevapHedef.ok) throw new Error("Kumbaraya eklenemedi.");
 
-    await authFetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: "gider",
-        amount: tutarTRY,
-        date: bugununTarihiniAl(),
-        category: "Birikim",
-        description: `Birikim: ${hedef.title}`
-      })
-    });
-
-    await islemleriGetir();
-    await hedefleriGetir();
+    // Hem işlemleri (bakiyeyi) hem de hedefleri eş zamanlı güncelle
+    await Promise.all([islemleriGetir(), hedefleriGetir()]);
   } catch (hata) {
     console.error(hata);
     alert("Para aktarılırken bir hata oluştu.");
@@ -838,13 +825,19 @@ async function kumbarayaParaEkle(hedef) {
 }
 
 async function hedefSil(id) {
-  if (!confirm("Bu birikim hedefini silmek istediğinize emin misiniz?")) return;
+  if (!confirm("Bu birikim hedefini silmek istediğinize emin misiniz? (İçinde birikmiş para varsa ana bakiyenize otomatik iade edilecektir.)")) return;
   try {
     const cevap = await authFetch(`${GOALS_API_URL}/${id}`, { method: "DELETE" });
     if (!cevap.ok) throw new Error("Silinemedi.");
-    await hedefleriGetir();
+    const sonuc = await cevap.json();
+    if (sonuc.message) {
+      alert(sonuc.message);
+    }
+    // İade edilen paranın bakiye ve işlem listesine anında yansıması için ikisini de güncelle
+    await Promise.all([islemleriGetir(), hedefleriGetir()]);
   } catch (hata) {
     console.error(hata);
+    alert("Hedef silinirken bir sorun oluştu.");
   }
 }
 
@@ -1722,7 +1715,7 @@ if (mobilTema) {
     const mevcutTema = document.documentElement.dataset.theme;
     const yeniTema = mevcutTema === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = yeniTema;
-    localStorage.setItem("financeTheme", newTema);
+    localStorage.setItem("financeTheme", yeniTema);
     temaGorunumunuGuncelle();
   });
 }
@@ -1837,7 +1830,6 @@ if (islemForm) {
 // Uygulamayı Başlat
 async function baslat() {
   const token = getToken();
-  const kayitliKullanici = localStorage.getItem("currentUser");
 
   if (!token) {
     document.body.classList.add("auth-locked");
