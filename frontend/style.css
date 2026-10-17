@@ -5764,3 +5764,44 @@ body:not(.auth-locked) #authContainer {
     color: var(--expense);
     background: rgba(239, 68, 68, 0.1);
 }
+/* Tema Değiştirici Buton Kontrast Düzeltmesi */
+.theme-switcher {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  background: var(--surface-soft, rgba(0, 0, 0, 0.05));
+  border-radius: 12px;
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.1));
+}
+
+.theme-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-soft, #64748b);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Açık veya Koyu seçildiğinde butonun net görünmesini sağlayan stil */
+.theme-option.active {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Koyu temada aktif buton görünümü */
+[data-theme="dark"] .theme-option.active {
+  background: #334155 !important;
+  color: #f8fafc !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+}
