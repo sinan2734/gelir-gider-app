@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finans Takip</title>
+    <!-- Tarayıcı Sekme Simgesi (Favicon) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4'></path><path d='M4 6v12a2 2 0 0 0 2 2h14v-4'></path><circle cx='18' cy='14' r='1'></circle></svg>">
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="auth-locked">
@@ -11,7 +13,13 @@
     <div id="authContainer">
         <div class="auth-card">
             <div class="auth-header">
-                <div class="auth-logo-badge">₺</div>
+                <div class="auth-logo-badge" style="display: inline-flex; align-items: center; justify-content: center;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path>
+                        <path d="M4 6v12a2 2 0 0 0 2 2h14v-4"></path>
+                        <circle cx="18" cy="14" r="1"></circle>
+                    </svg>
+                </div>
                 <h2 class="auth-title" id="authTitleText">Hesabınıza Giriş Yapın</h2>
                 <p class="auth-subtitle" id="authSubtitleText">Kişisel finansınızı güvenle yönetmeye devam edin</p>
             </div>
@@ -44,7 +52,13 @@
         <!-- SOL MENÜ -->
         <aside class="sidebar">
             <div class="logo">
-                <div class="logo-icon">₺</div>
+                <div class="logo-icon" style="display: flex; align-items: center; justify-content: center;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path>
+                        <path d="M4 6v12a2 2 0 0 0 2 2h14v-4"></path>
+                        <circle cx="18" cy="14" r="1"></circle>
+                    </svg>
+                </div>
                 <div class="logo-text">
                     <strong>Finans</strong>
                     <span>Takip</span>
