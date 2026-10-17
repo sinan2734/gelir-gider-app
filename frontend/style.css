@@ -5805,3 +5805,126 @@ body:not(.auth-locked) #authContainer {
   color: #f8fafc !important;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
 }
+/* =========================================================
+   ÖZEL BÖLÜM ÖLÇEKLENDİRMELERİ (MASAÜSTÜ)
+   ========================================================= */
+@media (min-width: 769px) {
+  /* Genel Bakış Sayfası -> %75 */
+  #genelBakisSayfasi {
+    zoom: 0.75;
+  }
+
+  /* İşlemler Sayfası -> %75 */
+  #islemlerSayfasi {
+    zoom: 0.75;
+  }
+
+  /* Aylık Özet Sayfası -> %67 */
+  #aylikOzet {
+    zoom: 0.67;
+  }
+
+  /* Borç & Alacak Sayfası -> %75 */
+  #borclarSayfasi {
+    zoom: 0.75;
+  }
+
+  /* Birikim & Hedefler Sayfası -> %75 */
+  #hedeflerSayfasi {
+    zoom: 0.75;
+  }
+
+  /* Giriş & Kayıt Ekranı -> %100 */
+  .auth-overlay, #authModal, .auth-container, .auth-card {
+    zoom: 1 !important;
+  }
+}
+
+/* =========================================================
+   TAM MOBİL UYUMLULUK (RESPONSIVE)
+   ========================================================= */
+@media (max-width: 768px) {
+  /* Telefondan girildiğinde zoom değerlerini normale al */
+  #genelBakisSayfasi,
+  #islemlerSayfasi,
+  #aylikOzet,
+  #borclarSayfasi,
+  #hedeflerSayfasi {
+    zoom: 1 !important;
+    width: 100% !important;
+    padding: 12px !important;
+  }
+
+  /* Ana sayfa düzenini dikey yap */
+  .app-layout, body {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Sol Menü (Sidebar) Telefondan görünür ve kaydırılabilir hale gelir */
+  .sidebar {
+    width: 100% !important;
+    height: auto !important;
+    position: relative !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border, rgba(255,255,255,0.1)) !important;
+    padding: 12px 16px !important;
+  }
+
+  .sidebar-menu {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    gap: 8px !important;
+    padding-bottom: 8px !important;
+    scrollbar-width: none;
+  }
+
+  .sidebar-menu::-webkit-scrollbar {
+    display: none;
+  }
+
+  .menu-item {
+    white-space: nowrap !important;
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+  }
+
+  /* Kartları tek sütuna diz */
+  .main-content {
+    width: 100% !important;
+    padding: 14px !important;
+  }
+
+  .summary-cards,
+  .dashboard-grid,
+  .goals-grid,
+  .debts-summary {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* Bakiye Banner kartını dar ekrana uyarla */
+  .balance-card {
+    padding: 20px 16px !important;
+  }
+
+  .balance-card h1 {
+    font-size: 26px !important;
+  }
+
+  /* Tabloların taşmasını engelle (yatay kaydırma) */
+  .table-responsive, .table-container, table {
+    width: 100% !important;
+    overflow-x: auto !important;
+    display: block !important;
+  }
+
+  /* Giriş / Kayıt Modalını mobilde ekrana tam oturt */
+  .auth-card {
+    width: 90% !important;
+    max-width: 400px !important;
+    padding: 24px 18px !important;
+  }
+}
