@@ -1498,15 +1498,21 @@ async function islemleriGetir() {
 async function islemSil(id) {
   if (!confirm("Bu işlemi silmek istediğinize emin misiniz?")) return;
   try {
-    const cevap = await authFetch(`${API_URL}/${id}`, { method: "DELETE" });
-    if (!cevap.ok) throw new Error("İşlem silinemedi.");
+    const cevap = await authFetch(`${API_URL}/${id}`, { 
+      method: "DELETE" 
+    });
+
+    if (!cevap.ok) {
+      const hataVerisi = await cevap.json().catch(() => ({}));
+      throw new Error(hataVerisi.error || `Sunucu hatası: ${cevap.status}`);
+    }
+
     await islemleriGetir();
   } catch (hata) {
-    console.error(hata);
-    alert("İşlem silinirken bir hata oluştu.");
+    console.error("Silme hatası:", hata);
+    alert("İşlem silinemedi: " + hata.message);
   }
 }
-
 // Navigasyon
 function tumSayfalariGizle() {
   const genel = document.getElementById("genelBakisSayfasi");
