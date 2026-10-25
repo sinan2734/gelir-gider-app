@@ -76,8 +76,8 @@ db.serialize(() => {
   // Eski tablolar varsa ve userId kolonu yoksa otomatik ekleme garantisi
   const tablolar = ["transactions", "debts", "goals"];
   tablolar.forEach((tablo) => {
-    db.run(`ALTER TABLE ${tablo} ADD COLUMN userId INTEGER`, (err) => {
-      // Kolon zaten varsa hata verir, hatayı yok sayıyoruz (normal akış)
+    db.run(`ALTER TABLE ${tablo} ADD COLUMN userId INTEGER`, () => {
+      // Kolon zaten varsa hata verir, yok sayılır
     });
   });
 });
@@ -226,10 +226,15 @@ app.put("/api/transactions/:id", authMiddleware, (req, res) => {
   );
 });
 
+// DÜZELTİLEN SİLME ROTASI
 app.delete("/api/transactions/:id", authMiddleware, (req, res) => {
   const { id } = req.params;
-  db.run("DELETE FROM transactions WHERE id = ?", [id, req.userId], function (err) {
+  const query = "DELETE FROM transactions WHERE id = ? AND userId = ?";
+  db.run(query, [id, req.userId], function (err) {
     if (err) return res.status(500).json({ error: err.message });
+    if (this.changes === 0) {
+      return res.status(404).json({ error: "İşlem bulunamadı veya silme yetkiniz yok." });
+    }
     res.json({ message: "İşlem silindi." });
   });
 });
