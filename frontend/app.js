@@ -18,7 +18,6 @@ function removeToken() {
   localStorage.removeItem("currentUser");
 }
 
-// Güvenli Fetch Wrapper'ı (Tüm API isteklerine otomatik token ekler)
 async function authFetch(url, options = {}) {
   const token = getToken();
   const headers = {
@@ -29,7 +28,6 @@ async function authFetch(url, options = {}) {
   const response = await fetch(url, { ...options, headers });
 
   if (response.status === 401 || response.status === 403) {
-    // Oturum süresi bittiğinde veya geçersiz olduğunda çıkış yaptır
     oturumKapat();
     throw new Error("Oturum süresi doldu.");
   }
@@ -51,24 +49,24 @@ const logoutBtn = document.getElementById("logoutBtn");
 const userDisplayName = document.getElementById("userDisplayName");
 const userAvatarText = document.getElementById("userAvatarText");
 
-let authMode = "login"; // 'login' veya 'register'
+let authMode = "login";
 
 function authModunuAyarla(mod) {
   authMode = mod;
   if (authErrorMsg) authErrorMsg.textContent = "";
 
   if (mod === "login") {
-    authTabLogin.classList.add("active");
-    authTabRegister.classList.remove("active");
-    authTitleText.textContent = "Hesabınıza Giriş Yapın";
-    authSubtitleText.textContent = "Kişisel finansınızı güvenle yönetmeye devam edin";
-    authSubmitBtn.textContent = "Giriş Yap";
+    if (authTabLogin) authTabLogin.classList.add("active");
+    if (authTabRegister) authTabRegister.classList.remove("active");
+    if (authTitleText) authTitleText.textContent = "Hesabınıza Giriş Yapın";
+    if (authSubtitleText) authSubtitleText.textContent = "Kişisel finansınızı güvenle yönetmeye devam edin";
+    if (authSubmitBtn) authSubmitBtn.textContent = "Giriş Yap";
   } else {
-    authTabRegister.classList.add("active");
-    authTabLogin.classList.remove("active");
-    authTitleText.textContent = "Yeni Hesap Oluşturun";
-    authSubtitleText.textContent = "Hemen başlayın, gelir ve giderlerinizi kontrol altına alın";
-    authSubmitBtn.textContent = "Hesap Oluştur";
+    if (authTabRegister) authTabRegister.classList.add("active");
+    if (authTabLogin) authTabLogin.classList.remove("active");
+    if (authTitleText) authTitleText.textContent = "Yeni Hesap Oluşturun";
+    if (authSubtitleText) authSubtitleText.textContent = "Hemen başlayın, gelir ve giderlerinizi kontrol altına alın";
+    if (authSubmitBtn) authSubmitBtn.textContent = "Hesap Oluştur";
   }
 }
 
@@ -76,8 +74,8 @@ if (authTabLogin) authTabLogin.addEventListener("click", () => authModunuAyarla(
 if (authTabRegister) authTabRegister.addEventListener("click", () => authModunuAyarla("register"));
 
 function kullaniciArayuzunuGuncelle(username) {
-  if (userDisplayName) userDisplayName.textContent = username;
-  if (userAvatarText) userAvatarText.textContent = username.charAt(0).toUpperCase();
+  if (userDisplayName) userDisplayName.textContent = username || "";
+  if (userAvatarText && username) userAvatarText.textContent = username.charAt(0).toUpperCase();
 }
 
 function oturumuAc(username, token) {
@@ -101,19 +99,21 @@ if (logoutBtn) logoutBtn.addEventListener("click", oturumKapat);
 if (authForm) {
   authForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const username = authUsernameInput.value.trim();
-    const password = authPasswordInput.value.trim();
+    const username = authUsernameInput ? authUsernameInput.value.trim() : "";
+    const password = authPasswordInput ? authPasswordInput.value.trim() : "";
 
     if (!username || !password) {
-      authErrorMsg.textContent = "Lütfen kullanıcı adı ve şifre girin.";
+      if (authErrorMsg) authErrorMsg.textContent = "Lütfen kullanıcı adı ve şifre girin.";
       return;
     }
 
     const endpoint = authMode === "login" ? "/api/auth/login" : "/api/auth/register";
 
     try {
-      authSubmitBtn.disabled = true;
-      authSubmitBtn.textContent = "Lütfen bekleyin...";
+      if (authSubmitBtn) {
+        authSubmitBtn.disabled = true;
+        authSubmitBtn.textContent = "Lütfen bekleyin...";
+      }
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -129,10 +129,12 @@ if (authForm) {
 
       oturumuAc(data.user.username, data.token);
     } catch (err) {
-      authErrorMsg.textContent = err.message;
+      if (authErrorMsg) authErrorMsg.textContent = err.message;
     } finally {
-      authSubmitBtn.disabled = false;
-      authSubmitBtn.textContent = authMode === "login" ? "Giriş Yap" : "Hesap Oluştur";
+      if (authSubmitBtn) {
+        authSubmitBtn.disabled = false;
+        authSubmitBtn.textContent = authMode === "login" ? "Giriş Yap" : "Hesap Oluştur";
+      }
     }
   });
 }
@@ -185,7 +187,7 @@ async function canliKurlariGuncelle() {
       localStorage.setItem("lastRatesFetchDate", bugunStr);
     }
   } catch (hata) {
-    console.warn("Canlı kurlar çekilemedi, varsayılan kurlar devrede.");
+    console.warn("Canlı kurlar devrede.");
   }
 }
 
@@ -311,13 +313,32 @@ let borclar = [];
 let hedefler = [];
 let duzenlenenIslemId = null;
 
-const GIDER_KATEGORILERI = ["Market", "Kira", "Fatura", "Sağlık", "Eğlence", "Eğitim", "Yeme-İçme", "Birikim", "Diğer"];
-const GELIR_KATEGORILERI = ["Maaş", "Yatırım", "Hediye / Ek Gelir", "Diğer"];
+// ==========================================
+// KATEGORİ YÖNETİMİ (ÖZELLEŞTİRİLEBİLİR MODAL)
+// ==========================================
+const TEMEL_GIDER_KATEGORILERI = ["Market", "Kira", "Fatura", "Sağlık", "Eğlence", "Eğitim", "Yeme-İçme", "Birikim", "Diğer"];
+const TEMEL_GELIR_KATEGORILERI = ["Maaş", "Yatırım", "Hediye / Ek Gelir", "Diğer"];
+
+function kategorileriGetir(tur) {
+  const anahtar = tur === "gelir" ? "customIncomeCategories" : "customExpenseCategories";
+  const varsayilan = tur === "gelir" ? TEMEL_GELIR_KATEGORILERI : TEMEL_GIDER_KATEGORILERI;
+  try {
+    const kayitli = localStorage.getItem(anahtar);
+    return kayitli ? JSON.parse(kayitli) : varsayilan;
+  } catch (e) {
+    return varsayilan;
+  }
+}
+
+function kategorileriKaydet(tur, liste) {
+  const anahtar = tur === "gelir" ? "customIncomeCategories" : "customExpenseCategories";
+  localStorage.setItem(anahtar, JSON.stringify(liste));
+}
 
 function kategoriSecenekleriniDoldur(tur, seciliKategori = "") {
   if (!kategoriInput) return;
   kategoriInput.innerHTML = "";
-  const liste = tur === "gelir" ? GELIR_KATEGORILERI : GIDER_KATEGORILERI;
+  const liste = kategorileriGetir(tur);
 
   liste.forEach(kat => {
     const opt = document.createElement("option");
@@ -326,8 +347,136 @@ function kategoriSecenekleriniDoldur(tur, seciliKategori = "") {
     if (kat === seciliKategori) opt.selected = true;
     kategoriInput.appendChild(opt);
   });
+
+  kategoriFiltresiniDoldur();
 }
 
+function kategoriFiltresiniDoldur() {
+  if (!kategoriFiltreSelect) return;
+  const suankiSecim = kategoriFiltreSelect.value;
+  kategoriFiltreSelect.innerHTML = `<option value="tumu">Tüm Kategoriler</option>`;
+
+  const tumKategoriler = Array.from(new Set([...kategorileriGetir("gider"), ...kategorileriGetir("gelir")]));
+  tumKategoriler.forEach(kat => {
+    const opt = document.createElement("option");
+    opt.value = kat;
+    opt.textContent = kat;
+    if (kat === suankiSecim) opt.selected = true;
+    kategoriFiltreSelect.appendChild(opt);
+  });
+}
+
+// Kategori Modal DOM Elemanları
+const categoryModal = document.getElementById("categoryModal");
+const kategoriYonetBtn = document.getElementById("kategoriYonetBtn");
+const mobilKategoriBtn = document.getElementById("mobilKategoriBtn");
+const categoryModalKapat = document.getElementById("categoryModalKapat");
+const catTabGider = document.getElementById("catTabGider");
+const catTabGelir = document.getElementById("catTabGelir");
+const categoryChipsList = document.getElementById("categoryChipsList");
+const newCategoryInput = document.getElementById("newCategoryInput");
+const saveNewCategoryBtn = document.getElementById("saveNewCategoryBtn");
+
+let aktifKategoriSekmesi = "gider";
+
+function kategoriModaliniAc() {
+  if (categoryModal) categoryModal.classList.add("show");
+  kategoriSekmesiniGuncelle("gider");
+}
+
+function kategoriModaliniKapat() {
+  if (categoryModal) categoryModal.classList.remove("show");
+  if (newCategoryInput) newCategoryInput.value = "";
+  if (turInput) kategoriSecenekleriniDoldur(turInput.value);
+}
+
+function kategoriSekmesiniGuncelle(tur) {
+  aktifKategoriSekmesi = tur;
+  if (tur === "gider") {
+    if (catTabGider) catTabGider.classList.add("active");
+    if (catTabGelir) catTabGelir.classList.remove("active");
+  } else {
+    if (catTabGelir) catTabGelir.classList.add("active");
+    if (catTabGider) catTabGider.classList.remove("active");
+  }
+  kategoriEtiketleriniCiz();
+}
+
+function kategoriEtiketleriniCiz() {
+  if (!categoryChipsList) return;
+  categoryChipsList.innerHTML = "";
+  const liste = kategorileriGetir(aktifKategoriSekmesi);
+
+  liste.forEach(kat => {
+    const chip = document.createElement("div");
+    chip.style.cssText = "display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; background: var(--surface); border: 1px solid var(--border); font-size: 13px; color: var(--text);";
+
+    chip.innerHTML = `
+      <span>${kat}</span>
+      ${kat !== "Diğer" ? `<button type="button" style="background: none; border: none; color: var(--expense); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 2px;">&times;</button>` : ""}
+    `;
+
+    const silBtn = chip.querySelector("button");
+    if (silBtn) {
+      silBtn.addEventListener("click", () => {
+        kategoriSil(aktifKategoriSekmesi, kat);
+      });
+    }
+
+    categoryChipsList.appendChild(chip);
+  });
+}
+
+function kategoriEkle() {
+  if (!newCategoryInput) return;
+  const yeniAd = newCategoryInput.value.trim();
+  if (!yeniAd) return;
+
+  let liste = kategorileriGetir(aktifKategoriSekmesi);
+  if (liste.includes(yeniAd)) {
+    alert("Bu kategori zaten mevcut.");
+    return;
+  }
+
+  liste.push(yeniAd);
+  kategorileriKaydet(aktifKategoriSekmesi, liste);
+  newCategoryInput.value = "";
+  kategoriEtiketleriniCiz();
+}
+
+function kategoriSil(tur, katAdi) {
+  if (katAdi === "Diğer") return;
+  let liste = kategorileriGetir(tur);
+  liste = liste.filter(k => k !== katAdi);
+  kategorileriKaydet(tur, liste);
+  kategoriEtiketleriniCiz();
+}
+
+if (kategoriYonetBtn) kategoriYonetBtn.addEventListener("click", kategoriModaliniAc);
+if (mobilKategoriBtn) mobilKategoriBtn.addEventListener("click", kategoriModaliniAc);
+if (categoryModalKapat) categoryModalKapat.addEventListener("click", kategoriModaliniKapat);
+if (catTabGider) catTabGider.addEventListener("click", () => kategoriSekmesiniGuncelle("gider"));
+if (catTabGelir) catTabGelir.addEventListener("click", () => kategoriSekmesiniGuncelle("gelir"));
+if (saveNewCategoryBtn) saveNewCategoryBtn.addEventListener("click", kategoriEkle);
+
+if (newCategoryInput) {
+  newCategoryInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      kategoriEkle();
+    }
+  });
+}
+
+if (categoryModal) {
+  categoryModal.addEventListener("click", (e) => {
+    if (e.target === categoryModal) kategoriModaliniKapat();
+  });
+}
+
+// ==========================================
+// YARDIMCI FORMAT FONKSİYONLARI
+// ==========================================
 function paraFormatla(tutarTRY) {
   const carpan = DOVIZ_KURLARI[seciliParaBirimi] || 1.0;
   const donusturulmus = (Number(tutarTRY) || 0) * carpan;
@@ -480,7 +629,7 @@ if (setBudgetBtn) {
     const carpan = DOVIZ_KURLARI[seciliParaBirimi] || 1.0;
     const mevcutTRY = Number(localStorage.getItem("monthlyBudgetLimit")) || 0;
     const mevcutDoviz = mevcutTRY > 0 ? (mevcutTRY * carpan).toFixed(2) : "";
-    const sembol = DOVIZ_SEMBOL[seciliParaBirimi];
+    const sembol = DOVIZ_SEMBOL[seciliParaBirimi] || "₺";
 
     const yeni = prompt(`Aylık harcama bütçenizi girin (${sembol}):`, mevcutDoviz);
     if (yeni !== null) {
@@ -507,7 +656,9 @@ if (clearBudgetBtn) {
   });
 }
 
-// Borç / Alacak İşlemleri
+// ==========================================
+// BORÇ / ALACAK İŞLEMLERİ
+// ==========================================
 async function borclariGetir() {
   try {
     const cevap = await authFetch(DEBTS_API_URL);
@@ -547,7 +698,7 @@ function borclariEkranaCiz() {
       <tr class="empty-row">
         <td colspan="6">
           <div class="empty-state">
-            <div class="empty-icon">⇄</div>
+            <div class="empty-icon">${DOVIZ_SEMBOL[seciliParaBirimi] || "₺"}</div>
             <strong>Kayıt bulunamadı</strong>
             <span>Henüz eklenmiş bir borç veya alacak kaydı yok.</span>
           </div>
@@ -576,7 +727,7 @@ function borclariEkranaCiz() {
     satir.innerHTML = `
       <td>
         <div class="transaction-name">${guvenliMetin(b.person)}</div>
-        ${b.description ? `<div class="transaction-description">\${guvenliMetin(b.description)}</div>` : ""}
+        ${b.description ? `<div class="transaction-description">${guvenliMetin(b.description)}</div>` : ""}
       </td>
       <td>${typeBadge}</td>
       <td>
@@ -597,8 +748,8 @@ function borclariEkranaCiz() {
     const toggleBtn = satir.querySelector(".toggle-status-btn");
     const silBtn = satir.querySelector(".table-action.delete");
 
-    toggleBtn.addEventListener("click", () => borcDurumunuDegistir(b.id));
-    silBtn.addEventListener("click", () => borcSil(b.id));
+    if (toggleBtn) toggleBtn.addEventListener("click", () => borcDurumunuDegistir(b.id));
+    if (silBtn) silBtn.addEventListener("click", () => borcSil(b.id));
 
     borclarTablosu.appendChild(satir);
   });
@@ -698,7 +849,9 @@ if (debtForm) {
   });
 }
 
-// Birikim & Hedefler
+// ==========================================
+// BİRİKİM & HEDEFLER
+// ==========================================
 async function hedefleriGetir() {
   try {
     const cevap = await authFetch(GOALS_API_URL);
@@ -783,20 +936,21 @@ function hedefleriEkranaCiz() {
       </div>
     `;
 
-    kart.querySelector(".goal-percentage-text").textContent = yuzdeMetni;
+    const percEl = kart.querySelector(".goal-percentage-text");
+    if (percEl) percEl.textContent = yuzdeMetni;
 
     const silBtn = kart.querySelector(".goal-delete-btn");
     const paraEkleBtn = kart.querySelector(".goal-add-fund-btn");
 
-    silBtn.addEventListener("click", () => hedefSil(h.id));
-    paraEkleBtn.addEventListener("click", () => kumbarayaParaEkle(h));
+    if (silBtn) silBtn.addEventListener("click", () => hedefSil(h.id));
+    if (paraEkleBtn) paraEkleBtn.addEventListener("click", () => kumbarayaParaEkle(h));
 
     hedeflerIzgarasi.appendChild(kart);
   });
 }
 
 async function kumbarayaParaEkle(hedef) {
-  const sembol = DOVIZ_SEMBOL[seciliParaBirimi];
+  const sembol = DOVIZ_SEMBOL[seciliParaBirimi] || "₺";
   const girdi = prompt(`"${hedef.title}" hedefine ne kadar para aktaracaksınız? (${sembol}):`);
   if (girdi === null) return;
 
@@ -817,20 +971,7 @@ async function kumbarayaParaEkle(hedef) {
     });
     if (!cevapHedef.ok) throw new Error("Kumbaraya eklenemedi.");
 
-    await authFetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: "gider",
-        amount: tutarTRY,
-        date: bugununTarihiniAl(),
-        category: "Birikim",
-        description: `Birikim: ${hedef.title}`
-      })
-    });
-
-    await islemleriGetir();
-    await hedefleriGetir();
+    await Promise.all([islemleriGetir(), hedefleriGetir()]);
   } catch (hata) {
     console.error(hata);
     alert("Para aktarılırken bir hata oluştu.");
@@ -838,11 +979,11 @@ async function kumbarayaParaEkle(hedef) {
 }
 
 async function hedefSil(id) {
-  if (!confirm("Bu birikim hedefini silmek istediğinize emin misiniz?")) return;
+  if (!confirm("Bu birikim hedefini silmek istediğinize emin misiniz? (İçinde biriken tutar ana bakiyenize iade edilecektir.)")) return;
   try {
     const cevap = await authFetch(`${GOALS_API_URL}/${id}`, { method: "DELETE" });
     if (!cevap.ok) throw new Error("Silinemedi.");
-    await hedefleriGetir();
+    await Promise.all([islemleriGetir(), hedefleriGetir()]);
   } catch (hata) {
     console.error(hata);
   }
@@ -923,7 +1064,9 @@ if (goalForm) {
   });
 }
 
-// AI Danışmanı
+// ==========================================
+// AI DANIŞMANI
+// ==========================================
 function aiDanismaniniGuncelle() {
   if (!aiInsightsList) return;
 
@@ -1041,7 +1184,9 @@ function aiDanismaniniGuncelle() {
   });
 }
 
-// Standart İşlem Modalı
+// ==========================================
+// STANDART İŞLEM MODALI
+// ==========================================
 function modalAc() {
   duzenlenenIslemId = null;
   if (modalBaslik) modalBaslik.textContent = "Yeni İşlem Ekle";
@@ -1148,7 +1293,7 @@ function genelBakisWidgetlariniGuncelle() {
   if (sonBes.length === 0) {
     miniIslemListesi.innerHTML = `
       <div class="empty-state" style="padding: 24px 0;">
-        <div class="empty-icon" style="width:36px;height:36px;font-size:16px;">${DOVIZ_SEMBOL[seciliParaBirimi]}</div>
+        <div class="empty-icon" style="width:36px;height:36px;font-size:16px;">${DOVIZ_SEMBOL[seciliParaBirimi] || "₺"}</div>
         <strong>Henüz hareket yok</strong>
         <span style="font-size:12px;">Yeni bir işlem ekleyerek başlayın.</span>
       </div>
@@ -1273,7 +1418,7 @@ function ekraniGuncelle() {
       <tr class="empty-row">
         <td colspan="6">
           <div class="empty-state">
-            <div class="empty-icon">${DOVIZ_SEMBOL[seciliParaBirimi]}</div>
+            <div class="empty-icon">${DOVIZ_SEMBOL[seciliParaBirimi] || "₺"}</div>
             <strong>Kayıt bulunamadı</strong>
             <span>Filtreleme kriterlerinizi değiştirerek tekrar deneyin.</span>
           </div>
@@ -1320,14 +1465,14 @@ function ekraniGuncelle() {
     const duzenleBtn = satir.querySelector(".table-action:not(.delete)");
     const silBtn = satir.querySelector(".table-action.delete");
 
-    duzenleBtn.addEventListener("click", () => islemDuzenle(islem));
-    silBtn.addEventListener("click", () => islemSil(islem.id));
+    if (duzenleBtn) duzenleBtn.addEventListener("click", () => islemDuzenle(islem));
+    if (silBtn) silBtn.addEventListener("click", () => islemSil(islem.id));
 
     islemTablosu.appendChild(satir);
   });
 }
 
-// API İşlemleri (Yetkilendirilmiş)
+// API İşlemleri
 async function islemleriGetir() {
   try {
     const cevap = await authFetch(API_URL);
@@ -1419,11 +1564,29 @@ function hedefleriGoster() {
 
 function menuAktifliginiGuncelle(aktifMenu) {
   document.querySelectorAll(".menu-item").forEach(m => m.classList.remove("active"));
-  if (aktifMenu === "aylik" && aylikOzetMenu) aylikOzetMenu.classList.add("active");
-  else if (aktifMenu === "islemler" && islemlerMenuLink) islemlerMenuLink.classList.add("active");
-  else if (aktifMenu === "borclar" && borclarMenu) borclarMenu.classList.add("active");
-  else if (aktifMenu === "hedefler" && hedeflerMenu) hedeflerMenu.classList.add("active");
-  else if (genelBakisMenu) genelBakisMenu.classList.add("active");
+  document.querySelectorAll(".mobile-nav-link").forEach(l => l.classList.remove("active"));
+
+  if (aktifMenu === "aylik") {
+    if (aylikOzetMenu) aylikOzetMenu.classList.add("active");
+    const m = document.querySelector('.mobile-nav-link[data-target="aylik"]');
+    if (m) m.classList.add("active");
+  } else if (aktifMenu === "islemler") {
+    if (islemlerMenuLink) islemlerMenuLink.classList.add("active");
+    const m = document.querySelector('.mobile-nav-link[data-target="islemler"]');
+    if (m) m.classList.add("active");
+  } else if (aktifMenu === "borclar") {
+    if (borclarMenu) borclarMenu.classList.add("active");
+    const m = document.querySelector('.mobile-nav-link[data-target="borclar"]');
+    if (m) m.classList.add("active");
+  } else if (aktifMenu === "hedefler") {
+    if (hedeflerMenu) hedeflerMenu.classList.add("active");
+    const m = document.querySelector('.mobile-nav-link[data-target="hedefler"]');
+    if (m) m.classList.add("active");
+  } else {
+    if (genelBakisMenu) genelBakisMenu.classList.add("active");
+    const m = document.querySelector('.mobile-nav-link[data-target="genel"]');
+    if (m) m.classList.add("active");
+  }
 }
 
 function hashIleSayfayiAc() {
@@ -1599,7 +1762,7 @@ function aylikTabloyuOlustur(aylikIslemler) {
       <tr class="empty-row">
         <td colspan="4">
           <div class="empty-state">
-            <div class="empty-icon">${DOVIZ_SEMBOL[seciliParaBirimi]}</div>
+            <div class="empty-icon">${DOVIZ_SEMBOL[seciliParaBirimi] || "₺"}</div>
             <strong>Bu ayda işlem yok</strong>
             <span>Seçtiğiniz ay için kayıt bulunamadı.</span>
           </div>
@@ -1688,6 +1851,7 @@ document.addEventListener("keydown", (event) => {
     if (transactionModal && transactionModal.classList.contains("show")) modalKapatFunc();
     if (debtModal && debtModal.classList.contains("show")) debtModalKapatFunc();
     if (goalModal && goalModal.classList.contains("show")) goalModalKapatFunc();
+    if (categoryModal && categoryModal.classList.contains("show")) kategoriModaliniKapat();
   }
 });
 
@@ -1722,7 +1886,7 @@ if (mobilTema) {
     const mevcutTema = document.documentElement.dataset.theme;
     const yeniTema = mevcutTema === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = yeniTema;
-    localStorage.setItem("financeTheme", newTema);
+    localStorage.setItem("financeTheme", yeniTema);
     temaGorunumunuGuncelle();
   });
 }
@@ -1771,6 +1935,30 @@ if (aylikOzetTarih) {
   aylikOzetTarih.value = bugununAyiniAl();
   aylikOzetTarih.addEventListener("change", aylikOzetiGuncelle);
 }
+
+// Mobil Alt Menü Navigasyonu
+document.querySelectorAll(".mobile-nav-link").forEach(link => {
+  link.addEventListener("click", function(e) {
+    e.preventDefault();
+    const target = this.dataset.target;
+    if (target === "genel") {
+      history.replaceState(null, "", "#");
+      genelBakisiGoster();
+    } else if (target === "islemler") {
+      history.replaceState(null, "", "#islemler");
+      islemleriGoster();
+    } else if (target === "aylik") {
+      history.replaceState(null, "", "#aylikOzet");
+      aylikOzetiGoster();
+    } else if (target === "borclar") {
+      history.replaceState(null, "", "#borclar");
+      borclariGoster();
+    } else if (target === "hedefler") {
+      history.replaceState(null, "", "#hedefler");
+      hedefleriGoster();
+    }
+  });
+});
 
 window.addEventListener("hashchange", hashIleSayfayiAc);
 
@@ -1837,14 +2025,12 @@ if (islemForm) {
 // Uygulamayı Başlat
 async function baslat() {
   const token = getToken();
-  const kayitliKullanici = localStorage.getItem("currentUser");
 
   if (!token) {
     document.body.classList.add("auth-locked");
     return;
   }
 
-  // Token geçerliliğini doğrula
   try {
     const res = await fetch("/api/auth/me", {
       headers: { "Authorization": `Bearer ${token}` }
@@ -1867,6 +2053,7 @@ async function baslat() {
   hashIleSayfayiAc();
   await canliKurlariGuncelle();
   paraBiriminiAyarla(seciliParaBirimi);
+  kategoriSecenekleriniDoldur("gider");
   await Promise.all([islemleriGetir(), borclariGetir(), hedefleriGetir()]);
 }
 

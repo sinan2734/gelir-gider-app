@@ -72,6 +72,10 @@
                     <span class="menu-icon">◎</span>
                     <span>Birikim & Hedefler</span>
                 </a>
+                <button type="button" class="menu-item" id="kategoriYonetBtn" style="background:none; border:none; width:100%; text-align:left; cursor:pointer;">
+                    <span class="menu-icon">🏷️</span>
+                    <span>Kategorileri Yönet</span>
+                </button>
             </nav>
 
             <div class="sidebar-bottom">
@@ -105,6 +109,7 @@
                         <h1>Genel Bakış</h1>
                     </div>
                     <div class="topbar-actions">
+                        <button type="button" id="mobilKategoriBtn" class="category-manage-btn-top" title="Kategorileri Yönet">🏷️ Kategoriler</button>
                         <div class="currency-select-box">
                             <select id="currencySelector" title="Para Birimi Değiştir">
                                 <option value="TRY">₺ TRY</option>
@@ -281,17 +286,6 @@
                             <label>Kategori</label>
                             <select id="kategoriFiltreSelect">
                                 <option value="tumu">Tüm Kategoriler</option>
-                                <option value="Market">🛒 Market</option>
-                                <option value="Kira">🏠 Kira</option>
-                                <option value="Fatura">💡 Fatura</option>
-                                <option value="Sağlık">💊 Sağlık</option>
-                                <option value="Eğlence">🎮 Eğlence</option>
-                                <option value="Eğitim">📚 Eğitim</option>
-                                <option value="Yeme-İçme">🍽️ Yeme-İçme</option>
-                                <option value="Maaş">💼 Maaş</option>
-                                <option value="Yatırım">📈 Yatırım</option>
-                                <option value="Birikim">💰 Birikim</option>
-                                <option value="Diğer">📦 Diğer</option>
                             </select>
                         </div>
 
@@ -568,7 +562,31 @@
         </main>
     </div>
 
-    <!-- İŞLEM EKLEME MODALI -->
+    <!-- MOBİL ALT MENÜ BARI -->
+    <nav class="mobile-bottom-nav">
+        <a href="#" class="mobile-nav-link active" data-target="genel">
+            <span class="nav-icon">⌂</span>
+            <span>Genel</span>
+        </a>
+        <a href="#islemler" class="mobile-nav-link" data-target="islemler">
+            <span class="nav-icon">☷</span>
+            <span>İşlemler</span>
+        </a>
+        <a href="#aylikOzet" class="mobile-nav-link" data-target="aylik">
+            <span class="nav-icon">◫</span>
+            <span>Özet</span>
+        </a>
+        <a href="#borclar" class="mobile-nav-link" data-target="borclar">
+            <span class="nav-icon">⇄</span>
+            <span>Borçlar</span>
+        </a>
+        <a href="#hedefler" class="mobile-nav-link" data-target="hedefler">
+            <span class="nav-icon">◎</span>
+            <span>Hedefler</span>
+        </a>
+    </nav>
+
+    <!-- İŞLEM EKLEME MODALI (ORİJİNAL SADELİKTE) -->
     <div class="modal" id="transactionModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -756,6 +774,34 @@
                     <button type="submit" class="primary-button">Hedefi Kaydet</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- BAĞIMSIZ KATEGORİ YÖNETİM MODALI -->
+    <div class="modal" id="categoryModal">
+        <div class="modal-content" style="max-width: 460px;">
+            <div class="modal-header">
+                <div>
+                    <div class="eyebrow">AYARLAR</div>
+                    <h2>Kategorileri Yönet</h2>
+                </div>
+                <button type="button" class="close-button" id="categoryModalKapat">×</button>
+            </div>
+
+            <div class="type-selector" style="margin-bottom: 16px;">
+                <button type="button" class="type-button active" id="catTabGider">↘ Gider Kategorileri</button>
+                <button type="button" class="type-button" id="catTabGelir">↗ Gelir Kategorileri</button>
+            </div>
+
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-soft); margin-bottom: 8px; text-transform: uppercase;">
+                Mevcut Kategoriler
+            </div>
+            <div id="categoryChipsList" style="display: flex; flex-wrap: wrap; gap: 8px; min-height: 80px; max-height: 180px; overflow-y: auto; padding: 12px; background: var(--surface-soft); border-radius: 12px; margin-bottom: 16px; border: 1px solid var(--border);"></div>
+
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="newCategoryInput" placeholder="Yeni kategori adı yazın..." style="flex: 1; height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-soft); color: var(--text); font-size: 13px;">
+                <button type="button" id="saveNewCategoryBtn" class="primary-button" style="min-height: 44px; padding: 0 18px;">Ekle</button>
+            </div>
         </div>
     </div>
 
